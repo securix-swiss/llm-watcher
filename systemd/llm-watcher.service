@@ -1,0 +1,24 @@
+[Unit]
+Description=Elasticsearch LLM Watcher Service
+After=network.target
+
+[Service]
+Type=simple
+User=llm-watcher
+Group=llm-watcher
+
+# Environment variables
+Environment=ELASTICSEARCH_URL=http://localhost:9200
+Environment=ELASTICSEARCH_USERNAME=elastic
+Environment=ELASTICSEARCH_PASSWORD=changeme
+Environment=OLLAMA_API_URL=http://localhost:11434
+Environment=OPENAI_API_KEY=
+Environment=WATCH_INDEX=llm-queue
+
+# Start the service
+ExecStart=/usr/bin/python3 /opt/llm-watcher/app.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
