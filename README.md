@@ -94,7 +94,6 @@ POST _scripts/llm
         ctx['_llm_watcher']['prompt'] = params.containsKey('prompt') ? params['prompt'] : null;
         ctx['_llm_watcher']['format'] = params.containsKey('format') ? params['format'] : new HashMap(); // Ensure it's an object
         ctx['_llm_watcher']['options'] = params.containsKey('options') ? params['options'] : null;
-        ctx['_llm_watcher']['keep_input_params'] = params.containsKey('keep_input_params') ? params['keep_input_params'] : false;
 
         ctx['_llm_watcher']['_original_index'] = ctx['_index'];
         ctx['_index'] = params.containsKey('queue_index') ? params['queue_index'] : 'llm-queue';
@@ -126,8 +125,7 @@ PUT _ingest/pipeline/llm
             "required": [
               "scale"
             ]
-          },
-          "keep_input_params": false
+          }
         }
       }
     }
@@ -159,17 +157,19 @@ python app.py \
 
 ### Command-line Arguments
 
-| Argument                     | Description                                                                                              |
-|------------------------------|----------------------------------------------------------------------------------------------------------|
-| `--elasticsearch`            | Elasticsearch URL (default: from environment variable `ELASTICSEARCH_URL`).                              |
-| `--ollama-api`               | Ollama API URL (default: from environment variable `OLLAMA_API_URL`).                                    |
-| `--openai-api-key`           | OpenAI API Key (default: from environment variable `OPENAI_API_KEY`).                                    |
-| `--elasticsearch-username`   | Username for Elasticsearch authentication (default: from environment variable `ELASTICSEARCH_USERNAME`). |
-| `--elasticsearch-password`   | Password for Elasticsearch authentication (default: from environment variable `ELASTICSEARCH_PASSWORD`). |
-| `--batch-size`               | Number of documents to process in a batch (default: 10).                                                 |
-| `--watch-index`              | Elasticsearch index to monitor for new documents (default: `llm-queue`).                                 |
-| `--watch-interval`           | Interval in seconds between index checks (default: 10).                                                  |
-| `--retry-errors`             | Retry processing documents that previously encountered errors.                                           |
+| Argument                     | Description                                                                                                        |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `--elasticsearch`            | Elasticsearch URL (default: from environment variable `ELASTICSEARCH_URL`).                                        |
+| `--ollama-api`               | Ollama API URL (default: from environment variable `OLLAMA_API_URL`).                                              |
+| `--openai-api-key`           | OpenAI API Key (default: from environment variable `OPENAI_API_KEY`).                                              |
+| `--elasticsearch-username`   | Username for Elasticsearch authentication (default: from environment variable `ELASTICSEARCH_USERNAME`).           |
+| `--elasticsearch-password`   | Password for Elasticsearch authentication (default: from environment variable `ELASTICSEARCH_PASSWORD`).           |
+| `--batch-size`               | Number of documents to process in a batch (default: 10) LLM will be called in parallel for each document in batch. |
+| `--watch-index`              | Elasticsearch index to monitor for new documents (default: `llm-queue`).                                           |
+| `--watch-interval`           | Interval in seconds between index checks (default: 10).                                                            |
+| `--retry-errors`             | Retry processing documents that previously encountered errors (default: False).                                    |
+| `--sort-field`               | Field to sort the documents by (default: none) for processing.                                                     |
+| `--debug`                    | Enable debug mode (default: False).                                                                                |
 
 ## Processing Workflow
 
