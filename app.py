@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import copy
 import json
 import jinja2
@@ -9,9 +8,6 @@ import logging
 import argparse
 import requests
 import multiprocessing
-
-
-
 
 def get_elasticsearch_docs(
     elasticsearch_url: str,
@@ -121,19 +117,22 @@ def ollama_generate(
 ):
     data = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "prompt": prompt,
         "format": llm_format,
         "stream": False
     }
     logger.debug(f"Ollama request: {data}")
-    url = f"{args.ollama_api}/api/chat"
+
+    url = f"{args.ollama_api}/api/generate"
     r = requests.post(url, json=data, headers={"Content-Type": "application/json"})
+
+    logger.debug(f"Ollama response: {r.text}")
     if r.raise_for_status():
         raise Exception(f"Failed to generate from Ollama: {r.text} / url: {url}")
 
     data = r.json()
     logger.debug(f"Ollama response: {data}")
-    return json.loads(data.get('message', {}).get('content', None))
+    return json.loads(data.get('response', {}))
 
 def openai_generate(
     args,
@@ -210,8 +209,9 @@ def process_document(
         else:
             raise Exception(f"Unknown llm provider: {provider}")
 
-        del ctx['_llm_watcher']
-        new_doc = {**ctx, **response}
+        new_doc = ctx
+        new_doc['_llm_watcher']['processed'] = True
+        new_doc['_llm_watcher']['output'] = response
         write_elasticsearch_doc(
             args.elasticsearch,
             args.elasticsearch_username,

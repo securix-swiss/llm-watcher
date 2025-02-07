@@ -87,16 +87,18 @@ POST _scripts/llm
   "script": {
     "lang": "painless",
     "source": """
-        ctx['_llm_watcher'] = new HashMap();
+        if (!ctx.containsKey('_llm_watcher') || !ctx['_llm_watcher'].containsKey('processed') || ctx['_llm_watcher']['processed'] == false) {
+            ctx['_llm_watcher'] = new HashMap();
 
-        ctx['_llm_watcher']['provider'] = params.containsKey('provider') ? params['provider'] : "ollama";
-        ctx['_llm_watcher']['model'] = params.containsKey('model') ? params['model'] : "llama3.3";
-        ctx['_llm_watcher']['prompt'] = params.containsKey('prompt') ? params['prompt'] : null;
-        ctx['_llm_watcher']['format'] = params.containsKey('format') ? params['format'] : new HashMap(); // Ensure it's an object
-        ctx['_llm_watcher']['options'] = params.containsKey('options') ? params['options'] : null;
+            ctx['_llm_watcher']['provider'] = params.containsKey('provider') ? params['provider'] : "ollama";
+            ctx['_llm_watcher']['model'] = params.containsKey('model') ? params['model'] : "llama3.3";
+            ctx['_llm_watcher']['prompt'] = params.containsKey('prompt') ? params['prompt'] : null;
+            ctx['_llm_watcher']['format'] = params.containsKey('format') ? params['format'] : new HashMap();
+            ctx['_llm_watcher']['options'] = params.containsKey('options') ? params['options'] : null;
 
-        ctx['_llm_watcher']['_original_index'] = ctx['_index'];
-        ctx['_index'] = params.containsKey('queue_index') ? params['queue_index'] : 'llm-queue';
+            ctx['_llm_watcher']['_original_index'] = ctx['_index'];
+            ctx['_index'] = params.containsKey('queue_index') ? params['queue_index'] : '.llm-queue';
+        }
     """
   }
 }
@@ -113,8 +115,8 @@ PUT _ingest/pipeline/llm
         "id": "llm",
         "params": {
           "provider": "ollama",
-          "model": "deepseek-r1:14b",
-          "prompt": "From a scale of 1-10 how good is this product review (1 is very bad, 10 is very good): {{ctx.message}}",
+          "model": "llama3.1:8b",
+          "prompt": "You are a rating assistent for customer reviews You rate the products in a scale from 1 to 10 where 1 is very bad review and 10 is a very good review. 1 Might be: 'Very bad product' and 10 would be 'I love this'. Rate this customer review: '{{ctx.message}}'",
           "format": {
             "type": "object",
             "properties": {
@@ -186,14 +188,35 @@ After processing, the document appears in the original index (`my-index`) as fol
 ```json
 {
   "_index": "my-index",
-  "_id": "2",
+  "_id": "1",
   "_version": 1,
-  "_seq_no": 1,
+  "_seq_no": 0,
   "_primary_term": 1,
   "found": true,
   "_source": {
     "message": "I love it!",
-    "scale": 5
+    "_llm_watcher": {
+      "_original_index": "my-index",
+      "provider": "ollama",
+      "format": {
+        "type": "object",
+        "properties": {
+          "scale": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scale"
+        ]
+      },
+      "options": null,
+      "model": "llama3.1:8b",
+      "prompt": "You are a rating assistent for customer reviews You rate the products in a scale from 1 to 10 where 1 is very bad review and 10 is a very good review. 1 Might be: 'Very bad product' and 10 would be 'I love this'. Rate this customer review: '{{ctx.message}}'",
+      "processed": true,
+      "output": {
+        "scale": 10
+      }
+    }
   }
 }
 ```
